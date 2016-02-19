@@ -1,0 +1,184 @@
+<html>
+<style type="text/css">
+		/*selector {property: value;}*/
+		body {
+			margin: 7;
+			background-attachment: fixed; 
+			background-position: center;
+			background-size: cover;
+			background-color: #80bfff; 
+		}
+
+		#user-input {
+			margin-bottom: 30px;
+		}
+
+		</style>
+	<head>
+		 <script type="text/javascript" src="http://cdn.tonejs.org/latest/Tone.min.js"></script>
+		<script type="text/javascript">
+			
+		var sampleURL;
+		var player;
+		var myaudio;
+		
+		<!-- //<link rel="stylesheet" href="styles.css" /> -->
+		<script type="text/javascript" src="/socket.io/socket.io.js"></script>
+		<script type="text/javascript">
+
+		///messages////
+			var socket = io.connect('http://162.243.83.164:8080/');
+			
+			socket.on('connect', function() {
+				console.log("Connected");
+			});
+
+			socket.on('chatmessage', function (data) {
+				console.log(data);
+
+			var oldMessages = document.getElementById('messages').innerHTML;
+				console.log(oldMessages);
+				document.getElementById('messages').innerHTML = "" + data + '<br>' + oldMessages;
+				
+
+			});
+
+			var sendmessage = function(message) {
+				console.log("chatmessage: " + message);
+				socket.emit('chatmessage', message);
+			};
+
+			// Receive from any event
+			//////drawing//////
+			
+
+			socket.on('othermouse', function (data) {
+				console.log(data.x + " " + data.y);
+				odraw(data.x,data.y);
+			});
+			
+			var sendmouse = function(xval, yval) {
+				console.log("sendmouse: " + xval + " " + yval);
+				socket.emit('othermouse',{ x: xval, y: yval });
+			};
+
+			///////////////
+			
+			var canvas;
+			var context;
+
+			var initcanvas = function() {
+
+				var osc = new Tone.Oscillator({
+					"frequency" : 200,
+					"volume" : -0
+				}).toMaster();
+
+				canvas = document.getElementById('mycanvas');
+				context = canvas.getContext('2d');
+			
+				context.fillStyle="#e6f7ff";
+				context.fillRect(0,0,canvas.width,canvas.height);	
+				
+				canvas.addEventListener('mousemove', function(evt) {
+
+					osc.start();
+					osc.frequency.value = (1-evt.clientY/canvas.height) * evt.clientX;
+					
+					console.log("mousemove " + evt.clientX + " " + evt.clientY);
+					
+					//evt.clientX is x but in the entire window, not the canvas
+					//evt.clientY is y
+		
+					// Get the canvas bounding rect
+					var canvasRect = canvas.getBoundingClientRect(); 
+
+					// Now calculate the mouse position values
+					y = evt.clientY - canvasRect.top; // minus the starting point of the canvas rect
+					x = evt.clientX - canvasRect.left;  // minus the starting point of the canvas rect on the x axis
+				
+					console.log("mousemove x:" + x + " y:" + y);
+
+					sendmouse(x,y);
+					draw(x,y);
+				}, false);				
+			};
+				
+			
+
+			var px = 0;
+			var py = 0;
+
+			//if (onmousedown){
+			var draw = function(xval,yval) {
+				
+				console.log("draw " + xval + " " + yval);
+				
+				
+				context.beginPath();
+	
+				// This is silly but it's what we have to do to get a random hex string
+				context.strokeStyle='#99bbff';
+	
+				context.moveTo(px,py);
+				context.lineTo(xval,yval);
+
+				context.stroke();
+				
+				px = xval;
+				py = yval;
+							
+			};
+			// }else {
+			// 	console.log("no draw");
+			// }
+
+			var opx = 0;
+			var opy = 0;
+	
+			 //if (onmousedown){
+			 var odraw = function(xval,yval) {
+				
+				console.log("draw " + xval + " " + yval);
+				
+				context.beginPath();
+	
+				// This is silly but it's what we have to do to get a random hex string
+				context.strokeStyle='#000000';
+	
+				context.moveTo(opx,opy);
+				context.lineTo(xval,yval);
+
+				context.stroke();
+				
+				opx = xval;
+				opy = yval;
+			};
+		// }else {
+		// 	console("no odraw");
+		// }
+	
+		</script>	
+	</head>
+	<div>
+		<font size= "8" color= "black" >Pictionary </font>
+		</div>
+	<div>
+		<font size= "5" color= "black" >directions</font>
+	</div>
+	<div id="user-input">
+		 <input type="text" id="message" name="message">
+		 <input type="submit" value="submit" onclick="sendmessage(document.getElementById('message').value);">
+		 <!-- <input id="submit-message" type="submit" value="submit" > -->
+	</div>
+	<div id="messages">
+ 	</div>
+ 	<p id="mpress" onmousedown= "mouseDown()" onmouseup="mouseUp()"></p>
+
+	<body onload="initcanvas();">
+		<canvas width="600" height="600" id="mycanvas" />
+		
+	
+	</body>
+</html>
+		
